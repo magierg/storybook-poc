@@ -1,47 +1,75 @@
+import React from 'react';
+import Task from './Task';
+import { useDispatch, useSelector } from 'react-redux';
+import { updateTaskState } from '../lib/store';
 
-export default function Task({ task: { id, title, state }, onArchiveTask, onPinTask }) {
+export default function TaskList() {
+  // We're retrieving our state from the store
+  const tasks = useSelector((state) => {
+    const tasksInOrder = [
+      ...state.taskbox.tasks.filter((t) => t.state === 'TASK_PINNED'),
+      ...state.taskbox.tasks.filter((t) => t.state !== 'TASK_PINNED'),
+    ];
+    const filteredTasks = tasksInOrder.filter(
+      (t) => t.state === 'TASK_INBOX' || t.state === 'TASK_PINNED'
+    );
+    return filteredTasks;
+  });
+
+  const { status } = useSelector((state) => state.taskbox);
+
+  const dispatch = useDispatch();
+
+  const pinTask = (value) => {
+    // We're dispatching the Pinned event back to our store
+    dispatch(updateTaskState({ id: value, newTaskState: 'TASK_PINNED' }));
+  };
+  const archiveTask = (value) => {
+    // We're dispatching the Archive event back to our store
+    dispatch(updateTaskState({ id: value, newTaskState: 'TASK_ARCHIVED' }));
+  };
+  const LoadingRow = (
+    <div className="loading-item">
+      <span className="glow-checkbox" />
+      <span className="glow-text">
+        <span>Loading</span> <span>cool</span> <span>state</span>
+      </span>
+    </div>
+  );
+  if (status === 'loading') {
     return (
-      <div className={`list-item ${state}`}>
-        <label
-          htmlFor="checked"
-          aria-label={`archiveTask-${id}`}
-          className="checkbox"
-        >
-          <input
-            type="checkbox"
-            disabled={true}
-            name="checked"
-            id={`archiveTask-${id}`}
-            checked={state === "TASK_ARCHIVED"}
-          />
-          <span
-            className="checkbox-custom"
-            onClick={() => onArchiveTask(id)}
-          />
-        </label>
-  
-        <label htmlFor="title" aria-label={title} className="title">
-          <input
-            type="text"
-            value={title}
-            readOnly={true}
-            name="title"
-            placeholder="Input title"
-           style={{ background: 'red' }}
-          />
-        </label>
-  
-        {state !== "TASK_ARCHIVED" && (
-          <button
-            className="pin-button"
-            onClick={() => onPinTask(id)}
-            id={`pinTask-${id}`}
-            aria-label={`pinTask-${id}`}
-            key={`pinTask-${id}`}
-          >
-            <span className={`icon-star`} />
-          </button>
-        )}
+      <div className="list-items" data-testid="loading" key={"loading"}>
+        {LoadingRow}
+        {LoadingRow}
+        {LoadingRow}
+        {LoadingRow}
+        {LoadingRow}
+        {LoadingRow}
       </div>
     );
   }
+  if (tasks.length === 0) {
+    return (
+      <div className="list-items" key={"empty"} data-testid="empty">
+        <div className="wrapper-message">
+          <span className="icon-check" />
+          <p className="title-message">You have no tasks</p>
+          <p className="subtitle-message">Sit back and relax</p>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="list-items" data-testid="success" key={"success"}>
+      {tasks.map((task) => (
+        <Task
+          key={task.id}
+          task={task}
+          onPinTask={(task) => pinTask(task)}
+          onArchiveTask={(task) => archiveTask(task)}
+        />
+      ))}
+    </div>
+  );
+}
